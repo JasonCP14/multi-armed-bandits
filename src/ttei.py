@@ -9,8 +9,8 @@ from src.arm import Arm
 
 logger = logging.getLogger(__name__)
 
-class ExpectedImprovement:
-    """ The Expected Improvement method class.
+class TTEI:
+    """ The Top Two Expected Improvement method class.
     
     Attributes:
         arms (List[Arm]): List of arms in the current problem.
