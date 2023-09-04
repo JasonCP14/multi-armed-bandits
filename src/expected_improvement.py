@@ -1,8 +1,13 @@
-from src.arm import Arm
+import logging
 import math
-import numpy as np
 from typing import List
-from scipy.stats import bernoulli
+
+import numpy as np
+from scipy.stats import bernoulli, norm
+
+from src.arm import Arm
+
+logger = logging.getLogger(__name__)
 
 class ExpectedImprovement:
     """ The Expected Improvement method class.
@@ -26,6 +31,8 @@ class ExpectedImprovement:
             challenger = self.get_challenger(leader)
             chosen_arm = (challenger, leader)[bernoulli.rvs(self.beta)]
             reward = chosen_arm.pull()
+
+            print(f"Iter {i}: Arm {chosen_arm.id}, miu = {chosen_arm.miu}, sigma^2 = {chosen_arm.sigma_sqr}")
             self.update(chosen_arm, reward)
 
     def get_leader(self) -> Arm:
@@ -39,7 +46,7 @@ class ExpectedImprovement:
         leader, leader_value = None, -math.inf
         for arm in self.arms:
             x = (arm.miu - target.miu) / np.sqrt(arm.sigma_sqr)
-            value = np.sqrt(arm.sigma_sqr) * f(x)
+            value = np.sqrt(arm.sigma_sqr) * self.f(x)
             if value > leader_value:
                 leader, leader_value = arm, value
 
@@ -59,13 +66,13 @@ class ExpectedImprovement:
         for arm in self.arms:
             if arm is not leader:
                 x = (arm.miu - leader.miu) / np.sqrt(arm.sigma_sqr + leader.sigma_sqr)
-                value = np.sqrt(arm.sigma_sqr + leader.sigma_sqr) * f(x)
+                value = np.sqrt(arm.sigma_sqr + leader.sigma_sqr) * self.f(x)
                 if value > challenger_value:
                     challenger, challenger_value = arm, value
 
         return challenger
 
-    def update(arm, reward: float) -> None:
+    def update(self, arm, reward: float) -> None:
         """ Updates the chosen arm according to the pulled reward.
 
         Args:
@@ -73,7 +80,7 @@ class ExpectedImprovement:
         """
 
         arm.miu = (arm.miu/arm.sigma_sqr + reward/arm.variance) / (1/arm.sigma_sqr + 1/arm.variance)
-        arm.sigma = 1/(1/arm.sigma_sqr + 1/arm.variance)
+        arm.sigma_sqr = 1/(1/arm.sigma_sqr + 1/arm.variance)
 
     def get_highest_posterior_mean(self) -> Arm:
         """ Gets the arm with the highest posterior mean.
@@ -84,5 +91,11 @@ class ExpectedImprovement:
 
         return max(self.arms, key = lambda x: x.miu)
     
-    def f(self, x):
-        return # TODO
+    def f(self, x: float) -> float:
+        """ Calculates f(x).
+
+        Returns:
+            float: The result.
+        """
+
+        return x * norm.cdf(x) + norm.pdf(x)
