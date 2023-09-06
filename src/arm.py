@@ -17,11 +17,12 @@ class Arm:
         self.initialize()
         
     def initialize(self) -> None:
-        """ Initializes the miu, sigma and number of pulls. """
+        """ Initializes the miu, sigma^2 and number of pulls. """
 
-        self.miu = 0 
-        self.sigma_sqr = self.variance              
         self.num_pulls = 0  
+        self.miu = self.pull()
+        self.sigma_sqr = self.variance              
+        
     
     def pull(self) -> float:
         """ Pulls this arm to get a reward from the true distribution.

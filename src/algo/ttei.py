@@ -36,13 +36,13 @@ class TTEI:
             self.update(chosen_arm, reward)
 
     def get_leader(self) -> Arm:
-        """ Gets the leader based on the EI sampling.
+        """ Gets the leader based on the TTEI sampling.
 
         Returns:
             Arm: The leader.
         """
 
-        target = self.get_highest_posterior_mean()
+        target = self.get_highest_mean()
         leader, leader_value = None, -math.inf
         for arm in self.arms:
             x = (arm.miu - target.miu) / np.sqrt(arm.sigma_sqr)
@@ -53,7 +53,7 @@ class TTEI:
         return leader
 
     def get_challenger(self, leader: Arm) -> Arm:
-        """ Gets the challenger based on the EI sampling.
+        """ Gets the challenger based on the TTEI sampling.
 
         Args:
             leader (Arm): The leader to challenge.
@@ -82,7 +82,7 @@ class TTEI:
         arm.miu = (arm.miu/arm.sigma_sqr + reward/arm.variance) / (1/arm.sigma_sqr + 1/arm.variance)
         arm.sigma_sqr = 1/(1/arm.sigma_sqr + 1/arm.variance)
 
-    def get_highest_posterior_mean(self) -> Arm:
+    def get_highest_mean(self) -> Arm:
         """ Gets the arm with the highest posterior mean.
 
         Returns:
