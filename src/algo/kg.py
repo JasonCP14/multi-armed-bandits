@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 from src.arm import Arm
-from src.algo.util import f
+from src.algo.util import f, get_highest_mean, get_optimal_prob
 
 logger = logging.getLogger(__name__)
 
@@ -14,25 +14,37 @@ class KG:
     
     Attributes:
         arms (List[Arm]): List of arms in the current problem.
-        beta (float): Beta hyperparameter to choose amongst the top two.
+        confint (float): Confidence interval of optimality between 0 and 1.
         max_iters (int): Number of iterations that the method can go through.
     """
 
-    def __init__(self, arms: List[Arm], beta: float, max_iters: int):
+    def __init__(self, arms: List[Arm], confint: float = 0.9999, max_iters: int = 1000):
         self.arms = arms
-        self.beta = beta
         self.max_iters = max_iters
+        self.confint = confint
         
-    def run(self) -> None:
-        """ Runs the method. """
+    def run(self) -> int:
+        """ Runs the method. 
+        
+        Returns:
+            int: The number of iterations to reach the specified confidence interval.
+        """
 
         for i in range(self.max_iters):
             chosen_arm = self.get_leader()
             # challenger = self.get_challenger(leader)
             # chosen_arm = (challenger, leader)[bernoulli.rvs(self.beta)]
             reward = chosen_arm.pull()
-            self.update(chosen_arm, reward)
+            
             print(f"Iter {i}: Arm {chosen_arm.id}, miu = {chosen_arm.miu}, sigma^2 = {chosen_arm.sigma_sqr}")
+            self.update(chosen_arm, reward)
+
+            prob = get_optimal_prob(self.arms)
+            if prob > self.confint:
+                break
+
+        print(f"After {i} iterations, the best arm is arm {get_highest_mean(self.arms).id}, with p = {prob}")
+        return i
 
     def get_leader(self) -> Arm:
         """ Gets the leader based on the KG sampling.
@@ -89,3 +101,8 @@ class KG:
         
         return projected_sigma_sqr
     
+    # def get_simple_regret(self):
+
+    # def get_cumulative_regret(self):
+
+    #     return 

@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 from scipy.stats import bernoulli
 
-from src.algo.util import f, get_highest_mean
+from src.algo.util import f, get_highest_mean, get_optimal_prob
 from src.arm import Arm
 
 logger = logging.getLogger(__name__)
@@ -15,17 +15,23 @@ class TTEI:
     
     Attributes:
         arms (List[Arm]): List of arms in the current problem.
-        beta (float): Beta hyperparameter to choose amongst the top two.
+        confint (float): Confidence interval of optimality between 0 and 1.
         max_iters (int): Number of iterations that the method can go through.
+        beta (float): Beta hyperparameter to choose amongst the top two.
     """
 
-    def __init__(self, arms: List[Arm], beta: float, max_iters: int):
+    def __init__(self, arms: List[Arm], confint: float = 0.9999, max_iters: int = 1000, beta: float = 0.5):
         self.arms = arms
         self.beta = beta
         self.max_iters = max_iters
+        self.confint = confint
         
-    def run(self) -> None:
-        """ Runs the method. """
+    def run(self) -> int:
+        """ Runs the method. 
+        
+        Returns:
+            int: The number of iterations to reach the specified confidence interval.
+        """
 
         for i in range(self.max_iters):
             leader = self.get_leader()
@@ -36,7 +42,12 @@ class TTEI:
             print(f"Iter {i}: Arm {chosen_arm.id}, miu = {chosen_arm.miu}, sigma^2 = {chosen_arm.sigma_sqr}")
             self.update(chosen_arm, reward)
 
-            print(self.check_stop())
+            prob = get_optimal_prob(self.arms)
+            if prob > self.confint:
+                break
+
+        print(f"After {i} iterations, the best arm is arm {get_highest_mean(self.arms).id}, with p = {prob}")
+        return i
 
     def get_leader(self) -> Arm:
         """ Gets the leader based on the TTEI sampling.
@@ -45,7 +56,7 @@ class TTEI:
             Arm: The leader.
         """
 
-        target = get_highest_mean()
+        target = get_highest_mean(self.arms)
         leader, leader_value = None, -math.inf
         for arm in self.arms:
             x = (arm.miu - target.miu) / np.sqrt(arm.sigma_sqr)
@@ -85,23 +96,6 @@ class TTEI:
 
         arm.miu = (arm.miu/arm.sigma_sqr + reward/arm.variance) / (1/arm.sigma_sqr + 1/arm.variance)
         arm.sigma_sqr = 1/(1/arm.sigma_sqr + 1/arm.variance)
-
-    def check_stop(self) -> bool:
-        """ Checks if the value estimates have satisfied the Chernoff's Stopping Rule.
-
-        Returns:
-            bool: Stop or not stop.
-        """
-
-        max_z = -math.inf
-        target = get_highest_mean()
-        for arm in self.arms:
-            if arm is not target:
-                total_pulls = target.num_pulls + arm.num_pulls
-                weighted_average = (target.miu * target.num_pulls + arm.miu * arm.num_pulls) / total_pulls
-                z = target.num_pulls * self.kl_div(target.miu, weighted_average, target.variance) + arm.num_pulls * self.kl_div(arm.miu, weighted_average, target.variance)
-                max_z = max(max_z, z)
-        return max_z
 
     def kl_div(self, miu_x, miu_y, sigma_sqr):
         return np.square(miu_x - miu_y) / (2 * sigma_sqr)
