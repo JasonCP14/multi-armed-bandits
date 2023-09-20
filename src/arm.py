@@ -20,9 +20,9 @@ class Arm:
         """ Initializes the miu, sigma^2 and number of pulls. """
 
         self.num_pulls = 0  
+        self.rewards = []
         self.miu = self.pull()
         self.sigma_sqr = self.variance              
-        
     
     def pull(self) -> float:
         """ Pulls this arm to get a reward from the true distribution.
@@ -33,5 +33,6 @@ class Arm:
 
         value = norm.rvs(self.mean, np.sqrt(self.variance))   
         self.num_pulls += 1     
+        self.rewards.append(value)
         
         return value

@@ -3,8 +3,9 @@ import math
 from typing import List
 
 import numpy as np
-from scipy.stats import bernoulli, norm
+from scipy.stats import bernoulli
 
+from src.algo.util import f, get_highest_mean
 from src.arm import Arm
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,8 @@ class TTEI:
             print(f"Iter {i}: Arm {chosen_arm.id}, miu = {chosen_arm.miu}, sigma^2 = {chosen_arm.sigma_sqr}")
             self.update(chosen_arm, reward)
 
+            print(self.check_stop())
+
     def get_leader(self) -> Arm:
         """ Gets the leader based on the TTEI sampling.
 
@@ -42,11 +45,11 @@ class TTEI:
             Arm: The leader.
         """
 
-        target = self.get_highest_mean()
+        target = get_highest_mean()
         leader, leader_value = None, -math.inf
         for arm in self.arms:
             x = (arm.miu - target.miu) / np.sqrt(arm.sigma_sqr)
-            value = np.sqrt(arm.sigma_sqr) * self.f(x)
+            value = np.sqrt(arm.sigma_sqr) * f(x)
             if value > leader_value:
                 leader, leader_value = arm, value
 
@@ -66,36 +69,39 @@ class TTEI:
         for arm in self.arms:
             if arm is not leader:
                 x = (arm.miu - leader.miu) / np.sqrt(arm.sigma_sqr + leader.sigma_sqr)
-                value = np.sqrt(arm.sigma_sqr + leader.sigma_sqr) * self.f(x)
+                value = np.sqrt(arm.sigma_sqr + leader.sigma_sqr) * f(x)
                 if value > challenger_value:
                     challenger, challenger_value = arm, value
 
         return challenger
 
-    def update(self, arm, reward: float) -> None:
+    def update(self, arm: Arm, reward: float) -> None:
         """ Updates the chosen arm according to the pulled reward.
 
         Args:
+            arm (Arm): The arm to be updated.
             reward (float): The reward pulled from the true distribution.
         """
 
         arm.miu = (arm.miu/arm.sigma_sqr + reward/arm.variance) / (1/arm.sigma_sqr + 1/arm.variance)
         arm.sigma_sqr = 1/(1/arm.sigma_sqr + 1/arm.variance)
 
-    def get_highest_mean(self) -> Arm:
-        """ Gets the arm with the highest posterior mean.
+    def check_stop(self) -> bool:
+        """ Checks if the value estimates have satisfied the Chernoff's Stopping Rule.
 
         Returns:
-            Arm: The arm with the highest posterior mean.
+            bool: Stop or not stop.
         """
 
-        return max(self.arms, key = lambda x: x.miu)
-    
-    def f(self, x: float) -> float:
-        """ Calculates f(x).
+        max_z = -math.inf
+        target = get_highest_mean()
+        for arm in self.arms:
+            if arm is not target:
+                total_pulls = target.num_pulls + arm.num_pulls
+                weighted_average = (target.miu * target.num_pulls + arm.miu * arm.num_pulls) / total_pulls
+                z = target.num_pulls * self.kl_div(target.miu, weighted_average, target.variance) + arm.num_pulls * self.kl_div(arm.miu, weighted_average, target.variance)
+                max_z = max(max_z, z)
+        return max_z
 
-        Returns:
-            float: The result.
-        """
-
-        return x * norm.cdf(x) + norm.pdf(x)
+    def kl_div(self, miu_x, miu_y, sigma_sqr):
+        return np.square(miu_x - miu_y) / (2 * sigma_sqr)

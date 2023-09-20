@@ -3,9 +3,9 @@ import math
 from typing import List
 
 import numpy as np
-from scipy.stats import norm
 
 from src.arm import Arm
+from src.algo.util import f
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +31,8 @@ class KG:
             # challenger = self.get_challenger(leader)
             # chosen_arm = (challenger, leader)[bernoulli.rvs(self.beta)]
             reward = chosen_arm.pull()
-
-            print(f"Iter {i}: Arm {chosen_arm.id}, miu = {chosen_arm.miu}, sigma^2 = {chosen_arm.sigma_sqr}")
             self.update(chosen_arm, reward)
+            print(f"Iter {i}: Arm {chosen_arm.id}, miu = {chosen_arm.miu}, sigma^2 = {chosen_arm.sigma_sqr}")
 
     def get_leader(self) -> Arm:
         """ Gets the leader based on the KG sampling.
@@ -46,17 +45,18 @@ class KG:
         for arm in self.arms:
             target = self.get_highest_mean_exclusive(arm)
             projected_sigma_sqr = self.get_projected_sigma_sqr(arm)
-            x = (arm.miu - target.miu) / np.sqrt(arm.sigma_sqr-projected_sigma_sqr)
-            value = np.sqrt(arm.sigma_sqr-projected_sigma_sqr) * self.f(x)
+            x = -np.abs(arm.miu - target.miu) / np.sqrt(arm.sigma_sqr-projected_sigma_sqr)
+            value = np.sqrt(arm.sigma_sqr-projected_sigma_sqr) * f(x)
             if value > leader_value:
                 leader, leader_value = arm, value
 
         return leader
 
-    def update(self, arm, reward: float) -> None:
+    def update(self, arm: Arm, reward: float) -> None:
         """ Updates the chosen arm according to the pulled reward.
 
         Args:
+            arm (Arm): The arm to be updated.
             reward (float): The reward pulled from the true distribution.
         """
 
@@ -89,11 +89,3 @@ class KG:
         
         return projected_sigma_sqr
     
-    def f(self, x: float) -> float:
-        """ Calculates f(x).
-
-        Returns:
-            float: The result.
-        """
-
-        return x * norm.cdf(x) + norm.pdf(x)
