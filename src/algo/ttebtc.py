@@ -10,7 +10,7 @@ from src.arm import Arm
 logger = logging.getLogger(__name__)
 
 class TTTC:
-    """ The Top Two Transportation Cost method class.
+    """ The Top Two Emprical Best - Transportation Cost method class.
     
     Attributes:
         arms (List[Arm]): List of arms in the current problem.
@@ -51,18 +51,18 @@ class TTTC:
         return i
 
     def get_leader(self) -> Arm:
-        """ Gets the leader based on the TTTC sampling.
+        """ Gets the leader based on the TTEBTC sampling.
 
         Returns:
             Arm: The leader.
         """
 
-        leader = max(self.arms, key = lambda arm: arm.sample())
+        leader = max(self.arms, key = lambda arm: arm.miu())
 
         return leader
 
     def get_challenger(self, leader: Arm) -> Arm:
-        """ Gets the challenger based on the TTTC sampling.
+        """ Gets the challenger based on the TTEBTC sampling.
 
         Args:
             leader (Arm): The leader to challenge.
