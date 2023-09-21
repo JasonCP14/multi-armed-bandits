@@ -103,8 +103,3 @@ class KG:
         
         return projected_sigma_sqr
     
-    # def get_simple_regret(self):
-
-    # def get_cumulative_regret(self):
-
-    #     return 

@@ -1,16 +1,17 @@
 import logging
+import math
 from typing import List
 
 import numpy as np
 from scipy.stats import bernoulli
 
-from src.algo.util import get_highest_mean, get_optimal_prob, get_transportation_cost
+from src.algo.util import get_highest_mean, get_optimal_prob, get_transportation_cost, w_bar
 from src.arm import Arm
 
 logger = logging.getLogger(__name__)
 
-class TTEBTC:
-    """ The Top Two Emprical Best - Transportation Cost method class.
+class TTUCB:
+    """ The Top Two Upper Confidence Bound method class.
     
     Attributes:
         arms (List[Arm]): List of arms in the current problem.
@@ -51,18 +52,23 @@ class TTEBTC:
         return i
 
     def get_leader(self) -> Arm:
-        """ Gets the leader based on the TTEBTC sampling.
+        """ Gets the leader based on the TTUCB sampling.
 
         Returns:
             Arm: The leader.
         """
 
-        leader = max(self.arms, key = lambda arm: arm.miu)
+        leader, leader_value = None, -math.inf
+        for arm in self.arms:
+            x = 2.88 * np.log(arm.num_pulls) + 2 * np.log(2 + 1.2*np.log(arm.num_pulls)) + 2
+            value = arm.miu + np.sqrt(w_bar(x)/arm.num_pulls)
+            if value > leader_value:
+                leader, leader_value = arm, value
 
         return leader
 
     def get_challenger(self, leader: Arm) -> Arm:
-        """ Gets the challenger based on the TTEBTC sampling.
+        """ Gets the challenger based on the TTUCB sampling.
 
         Args:
             leader (Arm): The leader to challenge.
@@ -71,7 +77,12 @@ class TTEBTC:
             Arm: The challenger.
         """
 
-        challenger = min(filter(lambda x: x is not leader, self.arms), key = lambda arm: get_transportation_cost(leader, arm) + np.log(arm.num_pulls))
+        challenger, challenger_value = None, math.inf
+        for arm in self.arms:
+            if arm is not leader:
+                value = np.abs(leader.miu - arm.miu) / np.sqrt((1/leader.num_pulls) + (1/arm.num_pulls))
+                if value < challenger_value:
+                    challenger, challenger_value = arm, value
 
         return challenger
 

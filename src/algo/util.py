@@ -82,3 +82,12 @@ def kl_div(miu_x: float, miu_y: float, sigma_sqr: float) -> float:
 
     return np.square(miu_x - miu_y) / (2 * sigma_sqr)
 
+def w_bar(x: float) -> float:
+    """ Calculates W_bar^-1(x).
+
+    Returns:
+        float: The result.
+    """
+
+    return x + np.log(x)
+
