@@ -36,3 +36,14 @@ class Arm:
         self.rewards.append(value)
         
         return value
+    
+    def sample(self) -> float:
+        """ Pulls this arm to get a reward from the true distribution.
+
+        Returns:
+            float: The arm's reward.
+        """
+
+        value = norm.rvs(self.miu, np.sqrt(self.sigma_sqr))
+        
+        return value

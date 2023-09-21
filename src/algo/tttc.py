@@ -5,13 +5,13 @@ from typing import List
 import numpy as np
 from scipy.stats import bernoulli
 
-from src.algo.util import f, get_highest_mean, get_optimal_prob
+from src.algo.util import f, get_highest_mean, get_optimal_prob, get_transportation_cost
 from src.arm import Arm
 
 logger = logging.getLogger(__name__)
 
-class TTEI:
-    """ The Top Two Expected Improvement method class.
+class TTTC:
+    """ The Top Two Transportation Cost method class.
     
     Attributes:
         arms (List[Arm]): List of arms in the current problem.
@@ -52,24 +52,18 @@ class TTEI:
         return i
 
     def get_leader(self) -> Arm:
-        """ Gets the leader based on the TTEI sampling.
+        """ Gets the leader based on the TTTC sampling.
 
         Returns:
             Arm: The leader.
         """
 
-        target = get_highest_mean(self.arms)
-        leader, leader_value = None, -math.inf
-        for arm in self.arms:
-            x = (arm.miu - target.miu) / np.sqrt(arm.sigma_sqr)
-            value = np.sqrt(arm.sigma_sqr) * f(x)
-            if value > leader_value:
-                leader, leader_value = arm, value
+        leader = max(self.arms, key = lambda arm: arm.sample())
 
         return leader
 
     def get_challenger(self, leader: Arm) -> Arm:
-        """ Gets the challenger based on the TTEI sampling.
+        """ Gets the challenger based on the TTTC sampling.
 
         Args:
             leader (Arm): The leader to challenge.
@@ -78,13 +72,7 @@ class TTEI:
             Arm: The challenger.
         """
 
-        challenger, challenger_value = None, -math.inf
-        for arm in self.arms:
-            if arm is not leader:
-                x = (arm.miu - leader.miu) / np.sqrt(arm.sigma_sqr + leader.sigma_sqr)
-                value = np.sqrt(arm.sigma_sqr + leader.sigma_sqr) * f(x)
-                if value > challenger_value:
-                    challenger, challenger_value = arm, value
+        challenger = min(filter(lambda x: x is not leader, self.arms), key = lambda arm: get_transportation_cost(leader, arm) + np.log(arm.num_pulls))
 
         return challenger
 
@@ -98,4 +86,3 @@ class TTEI:
 
         arm.miu = (arm.miu/arm.sigma_sqr + reward/arm.variance) / (1/arm.sigma_sqr + 1/arm.variance)
         arm.sigma_sqr = 1/(1/arm.sigma_sqr + 1/arm.variance)
-

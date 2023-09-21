@@ -20,8 +20,8 @@ class KG:
 
     def __init__(self, arms: List[Arm], confint: float = 0.9999, max_iters: int = 1000):
         self.arms = arms
-        self.max_iters = max_iters
         self.confint = confint
+        self.max_iters = max_iters
         
     def run(self) -> int:
         """ Runs the method. 
@@ -36,14 +36,16 @@ class KG:
             # chosen_arm = (challenger, leader)[bernoulli.rvs(self.beta)]
             reward = chosen_arm.pull()
             
-            print(f"Iter {i}: Arm {chosen_arm.id}, miu = {chosen_arm.miu}, sigma^2 = {chosen_arm.sigma_sqr}")
             self.update(chosen_arm, reward)
-
             prob = get_optimal_prob(self.arms)
             if prob > self.confint:
                 break
+        
+        print("Final Iteration Posterior Distribution:")
+        for arm in self.arms:   
+            print(f"Arm {arm.id}: miu = {arm.miu}, sigma^2 = {arm.sigma_sqr}")
 
-        print(f"After {i} iterations, the best arm is arm {get_highest_mean(self.arms).id}, with p = {prob}")
+        print(f"After {i} iterations, the best arm is arm {get_highest_mean(self.arms).id}, with p = {prob}\n")
         return i
 
     def get_leader(self) -> Arm:
