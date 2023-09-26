@@ -35,8 +35,12 @@ class BaseAlgo(ABC):
 
         for i in range(self.max_iters):
             leader = self.get_leader()
-            challenger = self.get_challenger(leader)
-            chosen_arm = (challenger, leader)[bernoulli.rvs(self.beta)]
+
+            if self.is_top_two:
+                challenger = self.get_challenger(leader)
+                chosen_arm = (challenger, leader)[bernoulli.rvs(self.beta)]
+            else:
+                chosen_arm = leader
             reward = chosen_arm.pull()
 
             self.update(chosen_arm, reward)

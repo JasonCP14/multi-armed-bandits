@@ -1,52 +1,22 @@
-import logging
 import math
-from typing import List
 
 import numpy as np
 
+from src.algo.base import BaseAlgo
+from src.algo.util import f, get_highest_mean
 from src.arm import Arm
-from src.algo.util import f, get_highest_mean, get_optimal_prob
 
-logger = logging.getLogger(__name__)
 
-class KG:
-    """ The Knowledge Gradient method class.
+class TTKG(BaseAlgo):
+    """ The Top Two Knowledge Gradient method class.
     
     Attributes:
         arms (List[Arm]): List of arms in the current problem.
+        is_top_two (bool): The method that the algo is using, Top Two or Normal.
         confint (float): Confidence interval of optimality between 0 and 1.
         max_iters (int): Number of iterations that the method can go through.
+        beta (float): Beta hyperparameter to choose amongst the top two.
     """
-
-    def __init__(self, arms: List[Arm], confint: float = 0.9999, max_iters: int = 1000):
-        self.arms = arms
-        self.confint = confint
-        self.max_iters = max_iters
-        
-    def run(self) -> int:
-        """ Runs the method. 
-        
-        Returns:
-            int: The number of iterations to reach the specified confidence interval.
-        """
-
-        for i in range(self.max_iters):
-            chosen_arm = self.get_leader()
-            # challenger = self.get_challenger(leader)
-            # chosen_arm = (challenger, leader)[bernoulli.rvs(self.beta)]
-            reward = chosen_arm.pull()
-            
-            self.update(chosen_arm, reward)
-            prob = get_optimal_prob(self.arms)
-            if prob > self.confint:
-                break
-        
-        print("Final Iteration Posterior Distribution:")
-        for arm in self.arms:   
-            print(f"Arm {arm.id}: miu = {arm.miu}, sigma^2 = {arm.sigma_sqr}")
-
-        print(f"After {i} iterations, the best arm is arm {get_highest_mean(self.arms).id}, with p = {prob}\n")
-        return i
 
     def get_leader(self) -> Arm:
         """ Gets the leader based on the KG sampling.
@@ -66,16 +36,28 @@ class KG:
 
         return leader
 
-    def update(self, arm: Arm, reward: float) -> None:
-        """ Updates the chosen arm according to the pulled reward.
+    def get_challenger(self, leader: Arm) -> Arm:
+        """ Gets the challenger based on the TTKG sampling.
 
         Args:
-            arm (Arm): The arm to be updated.
-            reward (float): The reward pulled from the true distribution.
+            leader (Arm): The leader to challenge.
+
+        Returns:
+            Arm: The challenger.
         """
 
-        arm.miu = (arm.miu/arm.sigma_sqr + reward/arm.variance) / (1/arm.sigma_sqr + 1/arm.variance)
-        arm.sigma_sqr = 1/(1/arm.sigma_sqr + 1/arm.variance)
+        target = get_highest_mean(self.arms)
+        target_projected_sigma_sqr = self.get_projected_sigma_sqr(leader)
+        challenger, challenger_value = None, -math.inf
+        for arm in self.arms:
+            if arm is not leader:
+                projected_sigma_sqr = self.get_projected_sigma_sqr(arm)
+                x = -np.abs(arm.miu - target.miu) / np.sqrt(target_projected_sigma_sqr+projected_sigma_sqr)
+                value = np.sqrt(target_projected_sigma_sqr+projected_sigma_sqr) * f(x)
+                if value > challenger_value:
+                    challenger, challenger_value = arm, value
+
+        return challenger
 
     def get_highest_mean_exclusive(self, excluded: Arm) -> Arm:
         """ Gets the arm with the highest posterior mean exclusive of the inputted arm.
