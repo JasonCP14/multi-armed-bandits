@@ -10,6 +10,7 @@ class TTTC(BaseAlgo):
     
     Attributes:
         arms (List[Arm]): List of arms in the current problem.
+        is_top_two (bool): The method that the algo is using, Top Two or Normal.
         confint (float): Confidence interval of optimality between 0 and 1.
         max_iters (int): Number of iterations that the method can go through.
         beta (float): Beta hyperparameter to choose amongst the top two.
