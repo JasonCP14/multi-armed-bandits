@@ -27,22 +27,6 @@ def get_second_highest_mean(arms: List[Arm]) -> Arm:
 
     return max(filter(lambda x: x is not get_highest_mean(arms), arms), key = lambda x: x.miu)
 
-def get_optimal_prob(arms: List[Arm]) -> float:
-    """ Gets the probability that the current best arm is the optimal arm.
-
-    Args:
-        arms (List[Arm]): List of arms in the current problem.
-
-    Returns:
-        float: Probability of optimality.
-    """
-
-    first = get_highest_mean(arms)
-    second = get_second_highest_mean(arms)
-
-    x = -(first.miu-second.miu) / np.sqrt(first.sigma_sqr+second.sigma_sqr)
-    return 1 - norm.cdf(x)
-
 def f(x: float) -> float:
     """ Calculates f(x).
 

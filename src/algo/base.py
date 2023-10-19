@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import List
 
+import numpy as np
 from scipy.stats import bernoulli
+from scipy.stats import norm
 
-from src.algo.util import get_highest_mean, get_optimal_prob
+from src.algo.util import get_highest_mean, get_second_highest_mean
 from src.arm import Arm
+from src.metrics import Metrics
 
 
 class BaseAlgo(ABC):
@@ -25,6 +28,7 @@ class BaseAlgo(ABC):
         self.confint = confint
         self.max_iters = max_iters
         self.beta = beta
+        self.metrics = Metrics(arms)
 
     def run(self) -> int:
         """ Runs the method. 
@@ -33,7 +37,7 @@ class BaseAlgo(ABC):
             int: The number of iterations to reach the specified confidence interval.
         """
 
-        for i in range(self.max_iters):
+        for i in range(1, self.max_iters+1):
             leader = self.get_leader()
 
             if self.is_top_two:
@@ -41,10 +45,12 @@ class BaseAlgo(ABC):
                 chosen_arm = (challenger, leader)[bernoulli.rvs(self.beta)]
             else:
                 chosen_arm = leader
-            reward = chosen_arm.pull()
 
+            reward = chosen_arm.pull()
             self.update(chosen_arm, reward)
-            prob = get_optimal_prob(self.arms)
+            self.metrics.update()
+
+            prob = self.get_optimal_prob()
             if prob > self.confint:
                 break
         
@@ -52,6 +58,7 @@ class BaseAlgo(ABC):
         for arm in self.arms:   
             print(f"Arm {arm.id}: miu = {arm.miu}, sigma^2 = {arm.sigma_sqr}")
 
+        results = {}
         print(f"After {i} iterations, the best arm is arm {get_highest_mean(self.arms).id}, with p = {prob}\n")
         return i
     
@@ -65,6 +72,19 @@ class BaseAlgo(ABC):
 
         arm.miu = (arm.miu/arm.sigma_sqr + reward/arm.variance) / (1/arm.sigma_sqr + 1/arm.variance)
         arm.sigma_sqr = 1/(1/arm.sigma_sqr + 1/arm.variance)
+    
+    def get_optimal_prob(self) -> float:
+        """ Gets the probability that the current best arm is the optimal arm.
+
+        Returns:
+            float: Probability of optimality.
+        """
+
+        first = get_highest_mean(self.arms)
+        second = get_second_highest_mean(self.arms)
+
+        x = -(first.miu-second.miu) / np.sqrt(first.sigma_sqr+second.sigma_sqr)
+        return 1 - norm.cdf(x)
 
     @abstractmethod
     def get_leader(self) -> Arm:
