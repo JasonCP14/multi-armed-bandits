@@ -46,14 +46,13 @@ class TTKG(BaseAlgo):
             Arm: The challenger.
         """
 
-        target = get_highest_mean(self.arms)
-        target_projected_sigma_sqr = self.get_projected_sigma_sqr(leader)
         challenger, challenger_value = None, -math.inf
         for arm in self.arms:
             if arm is not leader:
+                target = self.get_highest_mean_exclusive(arm)
                 projected_sigma_sqr = self.get_projected_sigma_sqr(arm)
-                x = -np.abs(arm.miu - target.miu) / np.sqrt(target_projected_sigma_sqr+projected_sigma_sqr)
-                value = np.sqrt(target_projected_sigma_sqr+projected_sigma_sqr) * f(x)
+                x = -np.abs(arm.miu - target.miu) / np.sqrt(arm.sigma_sqr-projected_sigma_sqr)
+                value = np.sqrt(arm.sigma_sqr-projected_sigma_sqr) * f(x)
                 if value > challenger_value:
                     challenger, challenger_value = arm, value
 
