@@ -30,11 +30,11 @@ class BaseAlgo(ABC):
         self.beta = beta
         self.metrics = Metrics(arms)
 
-    def run(self) -> int:
+    def run(self) -> dict:
         """ Runs the method. 
         
         Returns:
-            int: The number of iterations to reach the specified confidence interval.
+            dict: The iteration count and metrics of the current instance.
         """
 
         for i in range(1, self.max_iters+1):
@@ -58,9 +58,14 @@ class BaseAlgo(ABC):
         for arm in self.arms:   
             print(f"Arm {arm.id}: miu = {arm.miu}, sigma^2 = {arm.sigma_sqr}")
 
-        results = {}
         print(f"After {i} iterations, the best arm is arm {get_highest_mean(self.arms).id}, with p = {prob}\n")
-        return i
+        results = {
+            "final_iter": i,
+            "pe": self.metrics.pe,
+            "sr": self.metrics.sr,
+        }
+
+        return results
     
     def update(self, arm: Arm, reward: float) -> None:
         """ Updates the chosen arm according to the pulled reward.

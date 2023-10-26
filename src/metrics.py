@@ -1,5 +1,7 @@
-import numpy as np
 from typing import List
+
+import numpy as np
+
 from src.arm import Arm
 
 
@@ -47,7 +49,7 @@ class Metrics:
         """
 
         regret = self.true_best_arm.mean - current_best_arm.miu
-        if self.pe.size:
+        if self.sr.size:
             regret = (self.sr[-1] * self.sr.size + regret) / (self.sr.size + 1)
         
         self.sr = np.append(self.sr, regret)
