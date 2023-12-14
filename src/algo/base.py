@@ -39,6 +39,7 @@ class BaseAlgo(ABC):
             dict: The iteration count and metrics of the current instance.
         """
 
+        is_identified = False
         for i in range(1, self.max_iters+1):
             leader = self.get_leader()
 
@@ -55,16 +56,22 @@ class BaseAlgo(ABC):
             self.metrics.update()
 
             prob = self.get_optimal_prob()
-            if prob > self.confint:
-                break
+            if (prob > self.confint) and not is_identified:
+                minimum_iter, optimal_id, optimal_prob = i, get_highest_mean(self.arms).id, prob
+                is_identified = True
         
         print("Final Iteration Posterior Distribution:")
         for arm in self.arms:   
             print(f"Arm {arm.id}: miu = {arm.miu}, sigma^2 = {arm.sigma_sqr}")
 
-        print(f"After {i} iterations, the best arm is arm {get_highest_mean(self.arms).id}, with p = {prob}\n")
+        if is_identified:
+            print(f"After {minimum_iter} iterations, the best arm is arm {optimal_id}, with p = {optimal_prob}\n")
+        else:
+            print(f"After {self.max_iters} iterations, the best arm is not identified\n")
+            minimum_iter = None
+
         results = {
-            "final_iter": i,
+            "final_iter": minimum_iter,
             "pe": self.metrics.pe,
             "sr": self.metrics.sr,
         }
