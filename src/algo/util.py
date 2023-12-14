@@ -1,7 +1,10 @@
-from scipy.stats import norm
-from src.arm import Arm
-import numpy as np
 from typing import List
+
+import numpy as np
+from scipy.stats import norm
+
+from src.arm import Arm
+
 
 def get_highest_mean(arms: List[Arm]) -> Arm:
     """ Gets the arm with the highest posterior mean.
