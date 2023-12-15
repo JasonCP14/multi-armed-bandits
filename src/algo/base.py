@@ -53,7 +53,7 @@ class BaseAlgo(ABC):
 
             reward = chosen_arm.pull()
             self.update(chosen_arm, reward)
-            self.metrics.update()
+            self.metrics.update(chosen_arm)
 
             prob = self.get_optimal_prob()
             if (prob > self.confint) and not is_identified:
@@ -70,10 +70,12 @@ class BaseAlgo(ABC):
             print(f"After {self.max_iters} iterations, the best arm is not identified\n")
             minimum_iter = None
 
+        self.metrics.finalize()
         results = {
             "final_iter": minimum_iter,
             "pe": self.metrics.pe,
             "sr": self.metrics.sr,
+            "cr": self.metrics.cr
         }
 
         return results
