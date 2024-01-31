@@ -5,7 +5,7 @@ import numpy as np
 from scipy.stats import bernoulli, norm
 from scipy.optimize import minimize
 
-from src.algo.util import get_highest_mean, get_second_highest_mean
+from src.algo.util import get_highest_mean, get_second_highest_mean, get_transportation_cost
 from src.arm import Arm
 from src.metrics import Metrics
 
@@ -23,7 +23,7 @@ class BaseAlgo(ABC):
     """
 
     def __init__(self, arms: List[Arm], is_top_two: bool, is_adaptive_beta: bool,
-                 confint: float = 0.9999, max_iters: int = 1000):
+                 confint: float = 0.9999, max_iters: int = 2000):
         self.arms = arms
         self.is_top_two = is_top_two
         self.is_adaptive_beta = is_adaptive_beta
@@ -54,8 +54,8 @@ class BaseAlgo(ABC):
             reward = chosen_arm.pull()
             self.update(chosen_arm, reward)
             self.metrics.update(chosen_arm)
-
             prob = self.get_optimal_prob()
+ 
             if (prob > self.confint) and not is_identified:
                 minimum_iter, optimal_id, optimal_prob = i, get_highest_mean(self.arms).id, prob
                 is_identified = True
@@ -68,11 +68,12 @@ class BaseAlgo(ABC):
             print(f"After {minimum_iter} iterations, the best arm is arm {optimal_id}, with p = {optimal_prob}\n")
         else:
             print(f"After {self.max_iters} iterations, the best arm is not identified\n")
-            minimum_iter = None
+            minimum_iter = np.NaN
 
         self.metrics.finalize()
         results = {
             "final_iter": minimum_iter,
+            "fail": 0 if is_identified else 1,
             "pe": self.metrics.pe,
             "sr": self.metrics.sr,
             "cr": self.metrics.cr
@@ -95,7 +96,7 @@ class BaseAlgo(ABC):
         """ Updates the beta by maximizing the objective function."""
 
         cur_best_arm = get_highest_mean(self.arms)
-        other_arms = list(filter(lambda x: x is not cur_best_arm, self.arms))
+        other_arms = list(filter(lambda x: x is not self.arms[0], self.arms))
         constants = list(map(lambda arm: np.square(arm.miu - cur_best_arm.miu), other_arms))
         print(f"mius: {list(map(lambda x: x.miu, self.arms))}")
         print(f"mius other: {list(map(lambda x: x.miu, other_arms))}")
@@ -152,7 +153,7 @@ class BaseAlgo(ABC):
             # {"type": "ineq", "fun": five},
         )
 
-        bounds = [(0, 1), (0, 1)]
+        bounds = [(0.001, 0.999), (0.001, 0.999)]
 
         # Perform the optimization with constraints
         result = minimize(objective_function, initial_guess, constraints=constraints, 
@@ -169,6 +170,29 @@ class BaseAlgo(ABC):
         optimal_beta = result.x[0] 
         self.beta = optimal_beta
         print(f"Objective: {objective_function(result.x)}")
+
+    # def test(self):
+    #     best = get_highest_mean(self.arms)
+    #     min_z = 1000000
+    #     for arm in self.arms:
+    #         if arm is best:
+    #             continue
+    #         z = (best.miu-arm.miu)/np.sqrt(1/best.num_pulls + 1/arm.num_pulls)
+    #         z = get_transportation_cost(best, arm)
+    #         min_z = min(z, min_z)
+    #     return min_z
+
+
+    
+    # def bound(self, n, delta):
+    #     import math
+    #     def c(x):
+    #         return x + math.log10(x)
+
+    #     return 4*math.log10(math.log10(n/2)+4) + 2*c(math.log10(4/delta)/2)
+    
+    #     return math.log(8*n/delta)
+
     
     def get_optimal_prob(self) -> float:
         """ Gets the probability that the current best arm is the optimal arm.

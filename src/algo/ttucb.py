@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from src.algo.base import BaseAlgo
-from src.algo.util import w_bar
+from src.algo.util import w_bar, get_transportation_cost
 from src.arm import Arm
 
 
@@ -44,11 +44,6 @@ class TTUCB(BaseAlgo):
             Arm: The challenger.
         """
 
-        challenger, challenger_value = None, math.inf
-        for arm in self.arms:
-            if arm is not leader:
-                value = np.abs(leader.miu - arm.miu) / np.sqrt((1/leader.num_pulls) + (1/arm.num_pulls))
-                if value < challenger_value:
-                    challenger, challenger_value = arm, value
+        challenger = min(filter(lambda x: x is not leader, self.arms), key = lambda arm: get_transportation_cost(leader, arm))
 
         return challenger
