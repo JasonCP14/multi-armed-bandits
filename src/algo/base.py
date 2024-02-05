@@ -5,7 +5,7 @@ import numpy as np
 from scipy.stats import bernoulli, norm
 from scipy.optimize import minimize
 
-from src.algo.util import get_highest_mean, get_second_highest_mean, get_transportation_cost
+from src.algo.util import get_highest_mean, get_second_highest_mean
 from src.arm import Arm
 from src.metrics import Metrics
 
@@ -39,6 +39,10 @@ class BaseAlgo(ABC):
             dict: The iteration count and metrics of the current instance.
         """
 
+        print("Prior Distribution Initialization:")
+        for arm in self.arms:   
+            print(f"Arm {arm.id}: miu = {arm.miu}, sigma^2 = {arm.sigma_sqr}")
+
         is_identified = False
         for i in range(1, self.max_iters+1):
             leader = self.get_leader()
@@ -59,14 +63,18 @@ class BaseAlgo(ABC):
             if (prob > self.confint) and not is_identified:
                 minimum_iter, optimal_id, optimal_prob = i, get_highest_mean(self.arms).id, prob
                 is_identified = True
+                final_miu = list(map(lambda x: x.miu, self.arms))
+                final_sigma_sqr = list(map(lambda x: x.sigma_sqr, self.arms))
+                final_pulls = list(map(lambda x: x.num_pulls, self.arms))
         
         print("Final Iteration Posterior Distribution:")
-        for arm in self.arms:   
-            print(f"Arm {arm.id}: miu = {arm.miu}, sigma^2 = {arm.sigma_sqr}")
-
         if is_identified:
+            for i in range(len(self.arms)):   
+                print(f"Arm {i+1}: miu = {final_miu[i]}, sigma^2 = {final_sigma_sqr[i]}, num_pulls = {final_pulls[i]}")
             print(f"After {minimum_iter} iterations, the best arm is arm {optimal_id}, with p = {optimal_prob}\n")
         else:
+            for arm in self.arms:   
+                print(f"Arm {arm.id}: miu = {arm.miu}, sigma^2 = {arm.sigma_sqr}, num_pulls = {arm.num_pulls}")
             print(f"After {self.max_iters} iterations, the best arm is not identified\n")
             minimum_iter = np.NaN
 
