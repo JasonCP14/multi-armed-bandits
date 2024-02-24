@@ -16,17 +16,14 @@ class BaseAlgo(ABC):
     Attributes:
         arms (List[Arm]): List of arms in the current problem.
         is_top_two (bool): The method that the algo is using, Top Two or Normal.
-        is_adaptive_beta (bool): The method to choose the beta value. Adaptive or Fixed.
         confint (float): Confidence interval of optimality between 0 and 1.
         max_iters (int): Number of iterations that the method can go through.
         beta (float): Beta hyperparameter to choose amongst the top two.
     """
 
-    def __init__(self, arms: List[Arm], is_top_two: bool, is_adaptive_beta: bool,
-                 confint: float = 0.9999, max_iters: int = 2000):
+    def __init__(self, arms: List[Arm], is_top_two: bool, confint: float, max_iters: int = 2000):
         self.arms = arms
         self.is_top_two = is_top_two
-        self.is_adaptive_beta = is_adaptive_beta
         self.confint = confint
         self.max_iters = max_iters
         self.metrics = Metrics(arms)
@@ -48,8 +45,6 @@ class BaseAlgo(ABC):
             leader = self.get_leader()
 
             if self.is_top_two:
-                if self.is_adaptive_beta and (i%10 == 1 and i>1):
-                    self.update_beta()
                 challenger = self.get_challenger(leader)
                 chosen_arm = (challenger, leader)[bernoulli.rvs(self.beta)]
             else:
@@ -100,8 +95,8 @@ class BaseAlgo(ABC):
         arm.miu = (arm.miu/arm.sigma_sqr + reward/arm.variance) / (1/arm.sigma_sqr + 1/arm.variance)
         arm.sigma_sqr = 1/(1/arm.sigma_sqr + 1/arm.variance)
 
+    """
     def update_beta(self) -> None:
-        """ Updates the beta by maximizing the objective function."""
 
         cur_best_arm = get_highest_mean(self.arms)
         other_arms = list(filter(lambda x: x is not self.arms[0], self.arms))
@@ -133,7 +128,7 @@ class BaseAlgo(ABC):
                 constraint.append((c2 * beta) / (ck * beta * var2 - c2))
             return min(constraint)
         
-        """
+
         def three(args):
             beta, w2 = args
             var2 = 1/w2 + 1/beta
@@ -148,7 +143,7 @@ class BaseAlgo(ABC):
             beta, w2 = args
             var2 = 1/w2 + 1/beta
             return (c2 * beta) / (constants[3] * beta * var2 - c2)
-        """
+
 
         initial_guess = [self.beta, (1-self.beta)/len(other_arms)]
 
@@ -201,7 +196,7 @@ class BaseAlgo(ABC):
     
     #     return math.log(8*n/delta)
 
-    
+    """
     def get_optimal_prob(self) -> float:
         """ Gets the probability that the current best arm is the optimal arm.
 

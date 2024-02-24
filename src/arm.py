@@ -15,7 +15,7 @@ class Arm:
         params (dict): True parameters of the arm. None, ["a", "b"], ["a"].
     """
     
-    def __init__(self, id: int, distribution: str, mean: float, variance: float = 1, params: dict = None):
+    def __init__(self, id: int, distribution: str, mean: float, variance: float, params: dict = None):
         self.id = id           
         self.distribution = distribution    
         self.mean = mean
@@ -42,9 +42,16 @@ class Arm:
         if self.distribution == "N":
             value = norm.rvs(self.mean, std)   
         elif self.distribution == "B":
-            value = beta.rvs(self.params["a"], self.params["b"], self.mean, std)
+            a = self.params["a"]
+            b = self.params["b"]
+            E = a / (a + b)
+            V = (E * (1-E)) / (a + b + 1)
+            value = beta.rvs(a, b, self.mean - E, np.sqrt(self.variance / V))
         elif self.distribution == "G":
-            value = gamma.rvs(self.params["a"], self.mean, std)
+            a = self.params["a"]
+            E = np.sqrt(a)
+            V = a
+            value = gamma.rvs(a, self.mean - E, np.sqrt(self.variance / V))
         self.num_pulls += 1     
         self.rewards.append(value)
         
