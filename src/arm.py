@@ -41,12 +41,12 @@ class Arm:
         std = np.sqrt(self.variance)
         if self.distribution == "N":
             value = norm.rvs(self.mean, std)   
-        elif self.distribution == "B":       # Faulty
+        elif self.distribution == "B": 
             a = self.params["a"]
             b = self.params["b"]
-            E = a / (a + b)
-            V = (E * (1-E)) / (a + b + 1)
-            value = beta.rvs(a, b, self.mean - E, np.sqrt(self.variance / V))
+            V = (a * b) / (np.square(a+b) * (a + b + 1))
+            m = beta.mean(a, b, scale = np.sqrt(1 / V))
+            value = beta.rvs(a, b, self.mean - m, np.sqrt(1 / V))
         elif self.distribution == "G":       
             a = self.params["a"]
             b = np.sqrt(a)
