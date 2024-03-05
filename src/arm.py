@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 from scipy.stats import beta, gamma, norm
 

@@ -1,7 +1,4 @@
-import numpy as np
-
 from src.algo.base import BaseAlgo
-from src.algo.util import get_transportation_cost
 from src.arm import Arm
 
 

@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from src.algo.base import BaseAlgo
-from src.algo.util import f, get_highest_mean
+from src.algo.util import f
 from src.arm import Arm
 
 

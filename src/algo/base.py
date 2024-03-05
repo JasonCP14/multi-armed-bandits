@@ -3,7 +3,6 @@ from typing import List
 
 import numpy as np
 from scipy.stats import bernoulli, norm
-from scipy.optimize import minimize
 
 from src.algo.util import get_highest_mean, get_second_highest_mean
 from src.arm import Arm
