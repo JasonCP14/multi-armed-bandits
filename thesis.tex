@@ -232,7 +232,7 @@ $\beta\gets 0.5$\;
     C_n & \text{if } x_n = 0\text{;} \\
     \end{cases} \\
     $Y_{I_n,n}\gets$ Pull $I_n$\;
-    $update\_posterior(I_n,Y_{I_n,n})$ \Comment*[r]{See section 1.2}
+    $update\_posterior(I_n,Y_{I_n,n})$ \Comment*[r]{See section 1.3}
     $p\gets calculate\_prob()$ \Comment*[r]{See section 2.3}
     \If{$p \geq confidence$}
     {
@@ -275,7 +275,7 @@ The Top-Two Transportation Cost Algorithm, proposed by \cite{ttucb2}, serves as 
 
 Similar to the original Thompson Sampling algorithm, at each time step $n$, we denote the value of arm $i$ as:
 \[
-v_{i,n}^{TS} = \theta_{i,n}   
+v_{i,n}^{T3C} = \theta_{i,n}   
 \]
 where $\theta_n = (\theta_{1,n},\theta_{2,n}, ..., \theta_{k,n})$ represents the posterior distribution sampled at time $n$, with $\theta_{n}\sim \Pi_n$.
 
@@ -555,7 +555,7 @@ In summary, the parameters considered in our experiments are as follows:
 \item Distribution: Each arm follows an underlying true distribution, which can be Normal, Gamma, or Beta. We aim to evaluate whether the posterior distribution can accurately represent these different distribution types.
 \item True Arm $\mu$: The expected rewards of the arms influence their performance, but we are primarily interested in the separation between these means rather than their absolute values. This allows us to assess how the gap between arms affects algorithm performance.
 \item True Arm $\sigma^2$: In addition to means, we vary the common variance of the arms to examine how the spread of each arm's distribution impacts algorithm performance.
-\item Parameters: For Gamma distributions, we set the $\alpha$, and for Beta, we set both $\alpha$ and $b$, as explained in section \ref{sec:intro}. These parameters control the shape of the probability density function (PDF) and the difficulty of the problem. Greater deviation from a Normal distribution shape presents a tougher challenge for the algorithms.
+\item Parameters: For Gamma distributions, we set the $\alpha$, and for Beta, we set both $\alpha$ and $b$, as explained in section \ref{sec:intro}. These parameters control the shape of the probability density function (PDF) and the difficulty of the problem. Greater deviation from a Normal distribution shape is expected to present a tougher challenge for the algorithms.
 \item Algorithm Type (top-one / top-two): We compare the original (top-one) versions of the algorithms with their top-two counterparts. This allows us to assess how modifications enhance exploration and exploitation and address any shortcomings in the top-one versions.
 \item Algorithm: Across the six algorithms described in Section \ref{sec:algo}, we compare their performance to identify scenarios where certain algorithms may outperform others.
 \item Confidence Level $1-\delta$: This represents the minimum probability that posterior sampling selects the arm with the highest empirical mean over the arm with the second-highest empirical mean.
