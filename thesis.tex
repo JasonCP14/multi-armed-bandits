@@ -161,8 +161,12 @@ In this thesis, our primary focus will be on the Normal distribution as the unde
 \end{itemize}
 
 
-\subsection{Prior and Posterior Distribution}
 
+\section{Introduction to Best Arm Identification Algorithm} \label{sec:algo_intro}
+Since the inception of the Multi-Armed Bandits problem in the 1950s, it has been the subject of extensive research, rendering it one of the most thoroughly investigated problems in statistics. The intricate interplay between gathering information regarding the arms' rewards and leveraging this knowledge to maximize cumulative gains has spurred the development of numerous novel and innovative sampling strategies. However, before delving into these strategies, we will first examine the common building blocks that form the algorithms, as well as the rationale behind them.
+
+
+\subsection{Framework}
 While the problem may appear tailored for a frequentist approach, all algorithms presented in this thesis adopt a common Bayesian paradigm. We initiate with a Normally distributed prior over the true mean of each arm $i\in A$, expressed as $N(\mu_{i,1},\sigma_{i,1}^2)$. As the number of observations increase, this prior is updated to form the posterior distribution, which also follows a Normal distribution $N(\mu_{i,n},\sigma_{i,n}^2)$, thanks to conjugacy. The following recursive equations can be employed to calculate the one-step ahead posterior mean and variance:
 
 \begin{align} 
@@ -181,11 +185,6 @@ While the problem may appear tailored for a frequentist approach, all algorithms
 Subsequently, at time $n$, we denote the joint posterior distribution over the vector of arm means as:
 \[\Pi_n = N(\mu_{1,n},\sigma_{1,n}^2) \otimes N(\mu_{2,n},\sigma_{2,n}^2) \otimes ... \otimes N(\mu_{k,n},\sigma_{k,n}^2)\]
 and the vector of rewards drawn from $\Pi_n$ as $\theta_n = (\theta_{1,n},\theta_{2,n}, ..., \theta_{k,n})$.
-
-
-
-\section{Introduction to Best Arm Identification Algorithm} \label{sec:algo_intro}
-Since the inception of the Multi-Armed Bandits problem in the 1950s, it has been the subject of extensive research, rendering it one of the most thoroughly investigated problems in statistics. The intricate interplay between gathering information regarding the arms' rewards and leveraging this knowledge to maximize cumulative gains has spurred the development of numerous novel and innovative sampling strategies. However, before delving into these strategies, we will first examine the common building blocks that form the algorithms, as well as the rationale behind them.
 
 
 \subsection{Top-Two Modification} 
@@ -271,7 +270,7 @@ C_n & = \argmin_{i\in A,i\neq L_n} w_{i,n}^{TS}
 
 
 \subsection{Top-Two Transportation Cost Algorithm (T3C)}
-The Top-Two Transportation Cost Algorithm, proposed by \cite{ttucb2}, serves as a modification to the original Top-Two Thompson Sampling Algorithm with resampling. This algorithm employs the same sampling rule for the leader but provides a simpler deterministic approach for selecting the challenger, eliminating the need for extensive computational burden by leveraging an idea known as Transportation Cost. As demonstrated in the paper, this method numerically approximates the result of TTTS' original resampling technique.
+The Top-Two Transportation Cost Algorithm, proposed by \cite{ttucb2}, serves as a modification to the original Top-Two Thompson Sampling Algorithm with resampling. This algorithm employs the same sampling rule for the leader but provides a simpler deterministic approach for selecting the challenger, eliminating the need for extensive computational burden by leveraging an idea known as Transportation Cost. As demonstrated in the paper, this method numerically approximates the mode of the TTTS' original resampling technique.
 
 Similar to the original Thompson Sampling algorithm, at each time step $n$, we denote the value of arm $i$ as:
 \[
@@ -287,6 +286,8 @@ Here, $N_{L_n,n}$ and $N_{i,n}$ represent the number of times that the leader $L
 \[
 \mu_{L_n,i,n} = \frac{N_{L_n,n}}{N_{L_n,n}+N_{i,n}} \mu_{L_n,n} + \frac{N_{i,n}}{N_{L_n,n}+N_{i,n}} \mu_{i,n}  
 \]
+
+Not only does the use of Transportation Cost speed up the algorithm's execution, but it also replaces the random-based challenger sampling rule with a deterministic one.
 
 Below is the formal T3S sampling rule at time $n$:
 \begin{align} \label{eq:t3c}
@@ -314,6 +315,8 @@ Here, $N_{L_n,n}$ and $N_{i,n}$ represent the number of times that the leader $L
 \mu_{L_n,i,n} = \frac{N_{L_n,n}}{N_{L_n,n}+N_{i,n}} \mu_{L_n,n} + \frac{N_{i,n}}{N_{L_n,n}+N_{i,n}} \mu_{i,n}  
 \]
 
+Here, we have gone from the fully random Top Two Thompson Sampling, to a fully deterministic Top Two Empirical Best-Transportation Cost.
+
 Below is the formal TTEBTC sampling rule at time $n$:
 \begin{align} \label{eq:ttebtc}
 L_n & = \argmax_{i\in A} v_{i,n}^{EBTC} \nonumber \\
@@ -330,7 +333,7 @@ According to \cite{ttucb}, at each time step $n$, we can denote the UCB value of
 \[
 v_{i,n}^{UCB} = \mu_{i,n} + \sqrt{\frac{g(n)}{N_{i,n}}}     
 \]
-Here, $N_{i,n}$ represents the number of times that arm $i$ has been pulled before time $n$. Additionally, $g(n) = \overline{W}{-1}(2s\alpha \log(n) + 2\log(2+\alpha \log(n)) +2)$, with $\overline{W}{-1}(x) \approx x + \log(x)$ being the negative branch of the Lambert $W$ function. In this scenario, we can set the concentration parameter $\alpha=1.2$ and $s=1.2$.
+Here, $N_{i,n}$ represents the number of times that arm $i$ has been pulled before time $n$. Additionally, $g(n) = \overline{W}_{-1}(2s\alpha \log(n) + 2\log(2+\alpha \log(n)) +2)$, with $W_{-1}$ being the negative branch of the Lambert $W$ function and $\overline{W}_{-1}(x) \approx x + \log(x)$. In this scenario, we can set the concentration parameter $\alpha=1.2$ and $s=1.2$.
 
 The second term above serves as a bonus to account for uncertainty, providing the posterior mean with its upper confidence bound. As the number of pulls towards arm $i$ increases, the upper confidence bound tightens around the posterior mean.
 
@@ -545,7 +548,7 @@ However, this metric alone does not provide much insight into the choices made b
 
 \section{Numerical Experiments}
 \subsection{Overview}
-In this section, we conduct four distinct numerical experiments to evaluate the performance of each algorithm under different conditions. Each algorithm is subjected to 100 repetitions, with a maximum of 2000 iterations allowed for each run. A specific confidence level is selected to determine when the algorithm successfully identifies the optimal arm. And to ensure reproducibility, we reset the random seed before running each experiment group.
+In this section, we conduct four distinct numerical experiments to evaluate the performance of each algorithm under different conditions. Each algorithm is subjected to 100 repetitions, with a maximum of 2000 iterations allowed for each run. A specific confidence level is selected to determine when the algorithm successfully identifies the optimal arm. And to ensure reproducibility, we reset the random seed before initiating each algorithm.
 
 To ensure a good starting point, each algorithm initially pulls each arm $i \in A = \{1, ..., 5\}$ once from their corresponding distributions. The rewards $Y_{i,1}$ obtained from these initial pulls are then used to define the prior distributions $N(Y_{i,1}, \sigma^2)$ for each arm $i\in A$. And as specified earlier, for the top-two versions of the algorithms, we set $\beta = 0.5$ for all experiments. 
 
@@ -587,7 +590,7 @@ Confidence Level & \multicolumn{4}{c}{0.95} \\
 \label{table:exp1_param}
 \end{table*}
 
-Here, we have two experiment groups: Group 1 for the top-one algorithms and Group 2 for the top-two algorithms. Within each group, we'll consider two sets of means: Subgroup A with means $[5, 4, 1, 1, 1]$, which is a well-separated set, and Subgroup B with means $[2, 0.8, 0.6, 0.4, 0.2]$, representing a denser set of means. So, in total, there will be 4 groups.
+Here, we have two experiment groups: Group 1 for the top-one algorithms and Group 2 for the top-two algorithms. Within each group, we'll consider two sets of means: Subgroup A with means $[5, 4, 1, 1, 1]$, which is a well-separated set, and Subgroup B with means $[2, 0.8, 0.6, 0.4, 0.2]$, representing a denser set of means.
 
 Firstly, we'll analyze the average number of iterations required to reach the 0.95 confidence level for each subgroup, along with their respective failure rates (if any):
 
@@ -662,7 +665,7 @@ In contrast, EI aims to identify the arm with the greatest potential for improve
 \subsubsection{Large Difference in the Average Number of Iterations of TTTS and T3C in Group 1A}
 In Group 1A, there was a significant difference in the mean number of iterations for the top-one versions of TS (17.15) and TTTC (12.74), despite both algorithms employing the exact same leader sampling rule. The reason for this difference can be deduced easily, as both algorithms utilize a purely random sampling rule, involving selecting the best sample from the posterior distribution. Consequently, when there is poor initialization, the posterior sampling becomes less accurate, leading to a cascading effect of pulling the non-optimal arm more times than necessary.
 
-For instance, in one instance of Group 1A TS run, arms $1$ and $2$ were initialized to 4.32 and 5.62, respectively, despite the actual mean of arm $1$ being higher. Consequently, during posterior sampling from the distribution $\Pi_n$ in the subsequent iterations, arm $2$ obtained the highest $v_{i,n}$ value most of the time, causing the algorithm to repeatedly select it as $L_n$ and waste several iterations. Therefore, we can conclude that the difference in the average number of iterations is entirely due to the randomization seed.
+For instance, in one instance of Group 1A TS run, arms $1$ and $2$ were initialized to 4.32 and 5.62, respectively, despite the actual mean of arm $1$ being higher. Consequently, during posterior sampling from the distribution $\Pi_n$ in the subsequent iterations, arm $2$ obtained the highest $v_{i,n}$ value most of the time, causing the algorithm to repeatedly select it as $L_n$ and waste several iterations. Therefore, we can conclude that the difference in the average number of iterations is entirely due to the randomness in the leader sampling rule.
 
 \subsubsection{Conclusion}
 From this experiment, we can confidently assert that the top-two versions of all algorithms outperform their top-one counterparts. This conclusion is supported by the lower average number of iterations, lower failure rate, and greater robustness to random occurrences exhibited by the top-two versions. there are some intriguing observations that may provide valuable insights for the analysis in the next experiment.
@@ -671,7 +674,7 @@ The comparison of the average number of iterations clearly highlights the superi
 
 Additionally, specific shortcomings observed in top-one algorithms, such as EI and EB failing to deliver prompt solutions, were addressed and rectified in the top-two versions. EI required a significantly higher number of iterations to reach the stopping rule, while EB failed in the majority of repetitions. These issues were mitigated in the top-two versions by introducing a second candidate to the leader, facilitating a more explorative approach and addressing the problem of shortsightedness.
 
-Lastly, the effect of purely random sampling rules in top-one algorithms, as seen in the disparate performance of TS and T3C despite their identical nature, underscores the need for further investigation. This discrepancy arises from the cascading effect of randomization in leader sampling. In the next experiment, we shall explore whether this effect is successfully mitigated by the addition of challenger sampling rules.
+Lastly, the effect of purely random sampling rules in top-one algorithms, as seen in the disparate performance of TS and T3C despite their identical nature, underscores the need for further investigation. This discrepancy arises from the cascading effect of randomization in leader sampling. In the next experiment, we shall explore whether this effect is successfully mitigated by the incorporation of both random and deterministic challenger sampling rules.
 
 
 \subsection{Experiment 2: Effect of True Means Separation}
@@ -698,7 +701,7 @@ Confidence Level & \multicolumn{3}{c}{0.9999} \\
 
 Unlike before, we only have three experiment groups: Group 1 for the moderately-separated set ($[5,3.3,3.2,3.1,3]$), Group 2 for the set with a mean distance of 1 ($[5,4,3,2,1]$), and Group 3 for the set with a mean distance of 0.5 ($[3,2.5,2,1.5,1]$). By gradually increasing the difficulty, we aim to gain a clearer understanding of the capabilities of these algorithms in significantly more complex scenarios.
 
-First, we will evaluate the average number of iterations required to reach the 0.9999 confidence level for each of the groups, along with their corresponding failure rates (if any):
+First, we will evaluate the average number of iterations required to reach the confidence level for each of the groups, along with their corresponding failure rates (if any):
 
 \begin{table*}[hbt!]
 \centering
@@ -944,11 +947,13 @@ Across the algorithms, we observe similar trends in the performance of TTKG as w
 \end{enumerate}
 
 \subsubsection{Solution on Normal distribution is not strictly faster than the others}
-The most striking observation in this experiment is the lower average number of iterations required to solve some of the non-Normal distributions compared to the Normal distribution, despite our underlying Normal prior and posterior distributions.
+The most notable observation in this experiment is the reduced average number of iterations required to solve some of the non-Normal distributions compared to the Normal distribution, despite the presence of underlying Normal prior and posterior distributions. Even in the case of the most non-Normal shape, TTTS, TTEBTC, TTUCB, and TTEI demonstrated a lower average number of iterations in Group 6 compared to Group 1.
 
 Initially, this might seem counter intuitive, as a Normal distribution inherently cannot perfectly match the shape of a Beta or Gamma distribution. However, it's essential to remember that our posterior distribution aims to parameterize the current mean estimate $\mu_{i,n}$ to converge towards the true means $\mu_i$ as the number of pulls increases, while simultaneously reducing the uncertainty $\sigma^2$ towards 0. It's not attempting to precisely replicate the exact shape of the true distributions, which would indeed be impossible.
 
-Furthermore, in our update equations (\ref{eq:miu_update}) and (\ref{eq:sigma_update}), we weight the reward based on its variance and the current $\mu_{i,n}$ estimation according to its uncertainty. This weighting mechanism is beneficial, especially in the case of non-Normal distributions where some probability density functions exhibit high kurtosis. In such distributions, outliers are more likely, which could potentially impact the calculation of $\mu_{i,n+1}$. The weighted sum helps mitigate the influence of short-term rewards, contributing to the overall effectiveness of the algorithm.
+Another reason can be elucidated by the Bayesian Central Limit Theorem. According to this theorem, under conjugate prior and likelihood conditions, the posterior distribution approximates a normal distribution as the sample size increases. In our scenario, despite the true distributions being Gamma and Beta, as we update our prior beliefs with more data, the posterior distribution of the parameters of these distributions tends to become approximately normal. Hence, employing a normal prior and updating it with data remains effective in approximating the mean of the Gamma and Beta distribution, particularly with increasing sample size.
+
+Lastly, in our update equations (\ref{eq:miu_update}) and (\ref{eq:sigma_update}), we weight the reward based on its variance and the current $\mu_{i,n}$ estimation according to its uncertainty. This weighting mechanism is beneficial, especially in the case of non-Normal distributions where some probability density functions exhibit high kurtosis. In such distributions, outliers are more likely, which could potentially impact the calculation of $\mu_{i,n+1}$. The weighted sum helps mitigate the influence of short-term rewards, contributing to the overall effectiveness of the algorithm.
 
 \subsubsection{Conclusion}
 In this experiment, we sought to challenge the six algorithms with five non-Normal scenarios, anticipating potential struggles due to the unfamiliar nature of these distributions. However, we observed consistent trends in the performance of TTKG and the four faster algorithms across these scenarios. And more surprisingly, they managed to solve these non-Normal distributions in a similar number of iterations or even faster compared to the Normal distribution. This unexpected outcome highlights the robustness of our posterior distribution updating rule. It implies that algorithms utilizing this rule are equipped to handle various error distributions effectively. This robustness is a crucial finding for future research endeavors with broader distributions.
@@ -961,7 +966,7 @@ In this thesis, we embarked on a comprehensive exploration of multi-armed bandit
 
 Then, through a series of experiments, we scrutinized the efficacy of both top-one and top-two algorithms under diverse conditions, shedding light on their strengths, weaknesses, and underlying mechanisms, while evaluating them based on three important metrics.
 
-Our investigation commenced with a comparison between top-one and top-two algorithms in Experiment 1. Here, we observed a marked improvement in performance with the adoption of the top-two approach. This enhancement stemmed from the reduced greediness and heightened exploratory rate facilitated by the incorporation of challengers in the arm sampling process. Algorithms such as Expected Improvement (EI) and Upper Confidence Bound (UCB) demonstrated a more balanced exploitation-exploration trade-off, resulting in substantial performance gains. Thompson Sampling, meanwhile, exhibited a high level of randomness in its leader sampling rule, mirroring that of top-one T3C, as they are compeletely identical.
+Our investigation commenced with a comparison between top-one and top-two algorithms in Experiment 1. Here, we observed a marked improvement in performance with the adoption of the top-two approach. This enhancement stemmed from the reduced greediness and heightened exploratory rate facilitated by the incorporation of challengers in the arm sampling process. Algorithms such as Expected Improvement (EI) and Empirical Best (EB) demonstrated a more balanced exploitation-exploration trade-off, resulting in substantial performance gains. Thompson Sampling, meanwhile, exhibited a high level of randomness in its leader sampling rule, mirroring that of top-one T3C, as they are compeletely identical.
 
 Experiment 2 extended our analysis to challenging problem settings, namely the increase in the mean distance between the arms. Notably, TTKG appeared to perform sub-optimally compared to other algorithms. Furthermore, the addition of challengers mitigated the adverse effects of randomness in leader sampling, particularly evident in T3C but less so in TTTS. However, despite the increased difficulty and variations in solving speed, top-two algorithms consistently delivered solutions within a small disparity in performance and a 0\% failure rate, indicating the success of the modifications.
 
